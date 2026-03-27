@@ -1,0 +1,13 @@
+{
+  "deviceId": "garmin-forerunner-255",
+  "patientId": "patient-001",
+  "timestamp": "2026-03-01T08:00:00Z",
+  "metrics": {
+    "steps": 9432,
+    "heartRate": 68,
+    "sleepMinutes": 460,
+    "hrvMs": 58,
+    "spo2Percent": 98,
+    "caloriesBurned": 2100
+  }
+}

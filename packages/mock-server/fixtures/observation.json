@@ -1,0 +1,24 @@
+{
+  "resourceType": "Observation",
+  "id": "example-observation",
+  "status": "final",
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "55423-8",
+        "display": "Number of steps"
+      }
+    ]
+  },
+  "subject": {
+    "reference": "Patient/example-patient"
+  },
+  "effectiveDateTime": "2026-03-01T08:00:00Z",
+  "valueQuantity": {
+    "value": 8432,
+    "unit": "steps",
+    "system": "http://unitsofmeasure.org",
+    "code": "{steps}"
+  }
+}

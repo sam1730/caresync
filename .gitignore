@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.js.map
+
+# Environment files
+.env
+
+# Build artifacts in wrong location (should be in dist/)
+packages/*/src/*.js
+packages/*/src/*.d.ts
