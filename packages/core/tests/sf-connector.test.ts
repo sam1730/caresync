@@ -107,11 +107,40 @@ describe('SalesforceConnector', () => {
     const connector = new SalesforceConnector(mockConfig)
     await expect(connector.upsertObservations([sampleObservation])).resolves.toBeUndefined()
     expect(mockPost).toHaveBeenCalledWith(
-      'http://localhost:3001/services/data/v59.0/fhir/r4/Observation',
+      'http://localhost:3001/services/data/v63.0/fhir/r4/Observation',
       sampleObservation,
       expect.objectContaining({
         headers: expect.objectContaining({
+          Accept: 'application/fhir+json',
           Authorization: 'Bearer mock-token',
+          'Content-Type': 'application/fhir+json',
+          'X-CORRELATION-ID': expect.any(String),
+        }),
+      })
+    )
+  })
+
+  it('uses the documented sandbox healthcare host when no explicit healthcare base URL is configured', async () => {
+    mockPost.mockResolvedValue({ status: 201, data: { id: 'obs-123' } })
+
+    const connector = new SalesforceConnector({
+      salesforce: {
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        instanceUrl: 'https://example.sandbox.my.salesforce.com',
+        loginUrl: 'https://example.sandbox.my.salesforce.com',
+        apiMode: 'healthcare-api',
+      },
+    })
+
+    await expect(connector.upsertObservations([sampleObservation])).resolves.toBeUndefined()
+    expect(mockPost).toHaveBeenCalledWith(
+      'https://api.healthcloud.salesforce.com/sandBox/clinical-diagnostics/fhir-r4/v1/Observation',
+      sampleObservation,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Accept: 'application/fhir+json',
+          Authorization: 'Bearer real-access-token',
           'Content-Type': 'application/fhir+json',
         }),
       })
