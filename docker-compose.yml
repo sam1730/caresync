@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  mock-server:
+    build:
+      context: ./packages/mock-server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./packages/mock-server/fixtures:/app/fixtures
