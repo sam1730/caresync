@@ -87,6 +87,14 @@ app.get('/admin/fhir-r4/v1/Patient/:id', handleHealthcarePatientGet)
 
 app.get('/admin/fhir-r4/v1/Patient', async (request) => {
   const { identifier } = request.query as { identifier?: string }
+  if (!identifier) {
+    return {
+      resourceType: 'Bundle',
+      total: 0,
+      entry: [],
+    }
+  }
+
   const [system, value] = identifier?.split('|') ?? []
   const matches = Array.from(patientStore.values()).filter((patient) =>
     patient.identifier?.some((item) => item.system === system && item.value === value)
