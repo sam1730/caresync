@@ -72,7 +72,7 @@ SF_USERNAME=your@email.com
 SF_PASSWORD=yourpassword
 
 # Open Wearables API
-OPEN_WEARABLES_API_URL=https://api.openwearables.com
+OPEN_WEARABLES_API_URL=https://api.openwearables.io
 OPEN_WEARABLES_API_KEY=your_api_key
 
 # Mock server (for local dev/testing)
@@ -182,18 +182,18 @@ CareSync is designed to sync wearable health data from the Open Wearables API in
 
 ### 1. Get Open Wearables API Access
 
-1. Visit [Open Wearables](https://openwearables.com) or your Open Wearables instance
+1. Visit [Open Wearables](https://openwearables.io) or your Open Wearables instance
 2. Sign up for an account or log in
 3. Navigate to your API settings/developer console
 4. Generate an API key
-5. Note your API URL (e.g., `https://api.openwearables.com`)
+5. Note your API URL (e.g., `https://api.openwearables.io`)
 
 ### 2. Configure CareSync for Open Wearables
 
 Update your `.env` file with Open Wearables credentials:
 
 ```env
-OPEN_WEARABLES_API_URL=https://api.openwearables.com
+OPEN_WEARABLES_API_URL=https://api.openwearables.io
 OPEN_WEARABLES_API_KEY=your_api_key_here
 ```
 
