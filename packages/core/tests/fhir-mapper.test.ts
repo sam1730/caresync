@@ -13,8 +13,25 @@ describe('fhir-mapper', () => {
     expect(observations).toHaveLength(1)
     expect(observations[0].resourceType).toBe('Observation')
     expect(observations[0].code.coding[0].code).toBe('55423-8')
+    expect(observations[0].code.coding[0].display).toBe('Number of steps in unspecified time')
+    expect(observations[0].code.text).toBe('Number of steps in unspecified time')
     expect(observations[0].valueQuantity.value).toBe(8432)
     expect(observations[0].subject.reference).toBe('Patient/patient-456')
+    expect(observations[0].issued).toBe('2026-03-01T08:00:00.000Z')
+  })
+
+  it('uses an explicit patient subject reference when provided', () => {
+    const observations = mapToFhir(
+      {
+        patientId: 'patient-456',
+        deviceId: 'garmin-123',
+        recordedAt: new Date('2026-03-01T08:00:00Z'),
+        heartRateBpm: 72,
+      },
+      { subjectReference: 'Patient/001REALPATIENT' }
+    )
+
+    expect(observations[0].subject.reference).toBe('Patient/001REALPATIENT')
   })
 
   it('skips undefined metrics', () => {

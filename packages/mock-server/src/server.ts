@@ -2,6 +2,15 @@ import Fastify from 'fastify'
 
 const app = Fastify({ logger: true })
 
+app.addContentTypeParser('application/fhir+json', { parseAs: 'string' }, (request, body, done) => {
+  try {
+    const parsedBody = typeof body === 'string' && body.length > 0 ? JSON.parse(body) : {}
+    done(null, parsedBody)
+  } catch (error) {
+    done(error as Error, undefined)
+  }
+})
+
 app.get('/health', async () => ({ status: 'ok', mock: true }))
 
 // Mock FHIR Observation endpoint

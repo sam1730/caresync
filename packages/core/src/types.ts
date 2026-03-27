@@ -24,6 +24,37 @@ export interface NormalisedData {
   caloriesBurned?: number
 }
 
+export type SalesforceApiMode = 'platform-fhir' | 'healthcare-api'
+
+export interface FhirIdentifier {
+  system?: string
+  value?: string
+}
+
+export interface FhirHumanName {
+  family?: string
+  given?: string[]
+}
+
+export interface FhirPatient {
+  resourceType: 'Patient'
+  id?: string
+  identifier?: FhirIdentifier[]
+  name?: FhirHumanName[]
+  gender?: 'male' | 'female' | 'other' | 'unknown'
+  birthDate?: string
+}
+
+export interface FhirBundleEntry<TResource> {
+  resource?: TResource
+}
+
+export interface FhirBundle<TResource> {
+  resourceType: 'Bundle'
+  total?: number
+  entry?: FhirBundleEntry<TResource>[]
+}
+
 export interface FhirObservation {
   resourceType: 'Observation'
   id?: string
@@ -34,11 +65,13 @@ export interface FhirObservation {
       code: string
       display: string
     }>
+    text?: string
   }
   subject: {
     reference: string
   }
   effectiveDateTime: string
+  issued?: string
   valueQuantity: {
     value: number
     unit: string
@@ -47,13 +80,31 @@ export interface FhirObservation {
   }
 }
 
+export interface HealthcareApiPatientDefaults {
+  givenName?: string
+  familyName?: string
+  gender?: 'male' | 'female' | 'other' | 'unknown'
+  birthDate?: string
+}
+
+export interface HealthcareApiConfig {
+  baseUrl?: string
+  fhirVersion?: string
+  apiVersion?: string
+  patientIdentifierSystem?: string
+  patientDefaults?: HealthcareApiPatientDefaults
+}
+
 export interface CareSyncConfig {
   salesforce: {
     clientId: string
     clientSecret: string
     instanceUrl: string
-    username: string
-    password: string
+    loginUrl?: string
+    apiMode?: SalesforceApiMode
+    healthcareApi?: HealthcareApiConfig
+    username?: string
+    password?: string
   }
   openWearables?: {
     apiUrl: string

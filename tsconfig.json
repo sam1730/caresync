@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "rootDir": ".",
+    "moduleResolution": "node",
+    "paths": {
+      "@caresync/core": ["packages/core/src/index.ts"]
+    },
+    "types": ["node"],
+    "declaration": false,
+    "noEmit": true
+  },
+  "include": ["examples/**/*.ts"]
+}

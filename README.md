@@ -32,31 +32,39 @@ npm install @caresync/core
 ```typescript
 import { CareSync } from '@caresync/core'
 
-const client = new CareSync({
-  salesforce: {
-    clientId: process.env.SF_CLIENT_ID!,
-    clientSecret: process.env.SF_CLIENT_SECRET!,
-    instanceUrl: process.env.SF_INSTANCE_URL!,
-    username: process.env.SF_USERNAME!,
-    password: process.env.SF_PASSWORD!,
-  },
-  useMock: process.env.USE_MOCK === 'true',
-  mockServerUrl: process.env.MOCK_SERVER_URL,
-})
+async function main() {
+  const client = new CareSync({
+    salesforce: {
+      clientId: process.env.SF_CLIENT_ID!,
+      clientSecret: process.env.SF_CLIENT_SECRET!,
+      instanceUrl: process.env.SF_INSTANCE_URL!,
+      loginUrl: process.env.SF_LOGIN_URL,
+      apiMode: 'healthcare-api',
+      healthcareApi: {
+        baseUrl: process.env.SF_HEALTHCARE_API_BASE_URL,
+        patientIdentifierSystem: process.env.SF_HEALTHCARE_PATIENT_IDENTIFIER_SYSTEM,
+      },
+    },
+    useMock: process.env.USE_MOCK === 'true',
+    mockServerUrl: process.env.MOCK_SERVER_URL,
+  })
 
-await client.push({
-  deviceId: 'garmin-forerunner-255',
-  patientId: 'patient-001',
-  timestamp: new Date().toISOString(),
-  metrics: {
-    steps: 9432,
-    heartRate: 68,
-    sleepMinutes: 460,
-    hrvMs: 58,
-    spo2Percent: 98,
-    caloriesBurned: 2100,
-  },
-})
+  await client.push({
+    deviceId: 'garmin-forerunner-255',
+    patientId: 'patient-001',
+    timestamp: new Date().toISOString(),
+    metrics: {
+      steps: 9432,
+      heartRate: 68,
+      sleepMinutes: 460,
+      hrvMs: 58,
+      spo2Percent: 98,
+      caloriesBurned: 2100,
+    },
+  })
+}
+
+await main()
 ```
 
 ## Environment variables
@@ -67,9 +75,16 @@ Copy `.env.example` to `.env` and fill in your credentials:
 # Salesforce Connected App credentials
 SF_CLIENT_ID=your_connected_app_client_id
 SF_CLIENT_SECRET=your_connected_app_client_secret
-SF_INSTANCE_URL=https://yourorg.salesforce.com
-SF_USERNAME=your@email.com
-SF_PASSWORD=yourpassword
+SF_INSTANCE_URL=https://your-domain.my.salesforce.com
+SF_LOGIN_URL=https://your-domain.my.salesforce.com
+SF_API_MODE=healthcare-api
+
+# Salesforce Healthcare API (used when SF_API_MODE=healthcare-api)
+SF_HEALTHCARE_API_BASE_URL=https://api.healthcloud.salesforce.com
+SF_HEALTHCARE_PATIENT_IDENTIFIER_SYSTEM=https://caresync.dev/patient-id
+SF_HEALTHCARE_PATIENT_GIVEN_NAME=CareSync
+SF_HEALTHCARE_PATIENT_FAMILY_NAME=Demo
+SF_HEALTHCARE_PATIENT_GENDER=unknown
 
 # Open Wearables API
 OPEN_WEARABLES_API_URL=https://api.openwearables.io
@@ -80,26 +95,55 @@ MOCK_SERVER_URL=http://localhost:3001
 USE_MOCK=true
 ```
 
+## API modes
+
+CareSync now supports two Salesforce write modes:
+
+- `platform-fhir`: posts to the org-hosted Salesforce FHIR REST endpoint. This is the mode used by the local mock server.
+- `healthcare-api`: posts to the Salesforce Healthcare API host, for example `https://api.healthcloud.salesforce.com/clinical-diagnostics/fhir-r4/v1/Observation`, and resolves or creates a real `Patient` resource before writing Observations.
+
 ## Running locally
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/sam1730/caresync
+git clone https://github.com/yourname/caresync
 cd caresync
 npm install
 
 # 2. Copy env file
 cp .env.example .env
-# Fill in your Salesforce credentials or leave USE_MOCK=true
+# Leave USE_MOCK=true and SF_API_MODE=platform-fhir for local testing without Salesforce credentials
 
-# 3. Start mock server
-docker-compose up
+# 3. Build the workspaces
+npm run build
 
 # 4. Run tests
 npm test
 
-# 5. Run the example
-npx ts-node examples/basic-sync.ts
+# 5. Start the mock server in a separate terminal
+npm run mock
+
+# 6. Run the example against the mock server
+USE_MOCK=true SF_API_MODE=platform-fhir MOCK_SERVER_URL=http://localhost:3001 npm run example
+```
+
+## Local development
+
+```bash
+# Run the mock server with Docker instead of ts-node-dev
+npm run dev
+
+# Run the mock server directly from the workspace
+npm run mock
+
+# Run the example against the Salesforce Healthcare API
+USE_MOCK=false SF_API_MODE=healthcare-api npm run example
+
+# Run the example against the org-hosted platform FHIR endpoint instead
+USE_MOCK=false SF_API_MODE=platform-fhir npm run example
+
+# Run the example against Salesforce after setting USE_MOCK=false in .env
+npm run example
 ```
 
 ## Running tests
@@ -137,7 +181,7 @@ npm publish --access public
 
 ## Salesforce Setup
 
-To use CareSync with a real Salesforce org, you need to set up a Connected App and enable Health Cloud FHIR R4 API:
+To use CareSync with a real Salesforce org, you need to set up a Connected App and choose which API surface you want to target.
 
 ### 1. Create a Connected App
 
@@ -152,29 +196,53 @@ To use CareSync with a real Salesforce org, you need to set up a Connected App a
    - Check **Enable OAuth Settings**
    - Callback URL: `http://localhost:3000/callback` (or your callback URL)
    - Selected OAuth Scopes:
-     - `api` - Manage user data via APIs
-     - `refresh_token` - Perform requests at any time
-     - `offline_access` - Perform requests at any time
+  - `api` - Manage user data via APIs
 6. Click **Save** and then **Continue**
 7. Copy the **Consumer Key** (Client ID) and **Consumer Secret** (Client Secret)
+8. Enable the **Client Credentials Flow** for the Connected App
+9. Assign a **Run As** user for the Connected App
+10. If you use `SF_API_MODE=healthcare-api`, add Healthcare API custom scopes for Patient and Observation access.
 
-### 2. Enable Health Cloud FHIR R4 API
+Recommended custom scopes for `healthcare-api` mode:
+
+- `system_patient_read`
+- `system_patient_write`
+- `system_observation_write`
+
+Or grant the broader equivalents:
+
+- `system_all_read`
+- `system_all_write`
+
+### 2. Choose the API surface
+
+For `SF_API_MODE=platform-fhir`:
 
 1. In Salesforce Setup, search for **Health Cloud**
 2. Navigate to **Health Cloud Settings**
 3. Enable **FHIR R4 API**
 4. Save your settings
 
+For `SF_API_MODE=healthcare-api`:
+
+1. Accept the Salesforce Healthcare API terms and enable access for your org
+2. Use the Healthcare API host for your region, such as `https://api.healthcloud.salesforce.com`
+3. Keep using your org My Domain URL only for OAuth token issuance
+
 ### 3. Configure Your Environment
 
-1. Copy your org's instance URL from the browser (e.g., `https://yourorg.salesforce.com`)
+1. Copy your org's My Domain URL from the browser (for example `https://yourorg.my.salesforce.com`)
 2. Update your `.env` file with:
    - `SF_CLIENT_ID`: Your Consumer Key
    - `SF_CLIENT_SECRET`: Your Consumer Secret
-   - `SF_INSTANCE_URL`: Your org's instance URL
-   - `SF_USERNAME`: Your Salesforce username
-   - `SF_PASSWORD`: Your Salesforce password
+  - `SF_INSTANCE_URL`: Your org My Domain URL
+  - `SF_LOGIN_URL`: Your org My Domain URL
+  - `SF_API_MODE`: `platform-fhir` or `healthcare-api`
+  - `SF_HEALTHCARE_API_BASE_URL`: your regional Healthcare API host when using `healthcare-api`
+  - `SF_HEALTHCARE_PATIENT_IDENTIFIER_SYSTEM`: the identifier system used to resolve or create Patients before Observation writes
 3. Set `USE_MOCK=false` to use the real Salesforce org
+
+When `SF_API_MODE=healthcare-api`, CareSync first tries to resolve `patientId` as an existing `Patient/{id}`. If that is not found, it searches by `identifier=<system>|<patientId>`. If no match exists, it creates a minimal `Patient` resource and uses the returned resource id for the Observation `subject.reference`.
 
 ## Using Open Wearables with CareSync
 
@@ -231,10 +299,14 @@ const careSync = new CareSync({
     clientId: process.env.SF_CLIENT_ID!,
     clientSecret: process.env.SF_CLIENT_SECRET!,
     instanceUrl: process.env.SF_INSTANCE_URL!,
-    username: process.env.SF_USERNAME!,
-    password: process.env.SF_PASSWORD!,
+    loginUrl: process.env.SF_LOGIN_URL,
+    apiMode: 'healthcare-api',
+    healthcareApi: {
+      baseUrl: process.env.SF_HEALTHCARE_API_BASE_URL,
+      patientIdentifierSystem: process.env.SF_HEALTHCARE_PATIENT_IDENTIFIER_SYSTEM,
+    },
   },
-  useMock: false, // Use real Salesforce
+  useMock: false,
 })
 
 // Fetch data from Open Wearables
@@ -296,8 +368,9 @@ CareSync maps the following metrics to FHIR R4 Observations:
 For development and testing without a real Open Wearables account:
 
 1. Set `USE_MOCK=true` in your `.env`
-2. Use the sample payload format in `examples/sample-payload.json`
-3. Start the mock server: `docker-compose up`
+2. Set `MOCK_SERVER_URL=http://localhost:3001`
+3. Use the sample payload format in `examples/sample-payload.json`
+4. Start the mock server with `npm run mock` or `npm run dev`
 4. Run the example: `npx ts-node examples/basic-sync.ts`
 
 ### 7. Production Considerations

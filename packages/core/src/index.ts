@@ -17,8 +17,9 @@ export class CareSync {
 
   async push(rawData: RawDeviceData): Promise<void> {
     const normalised = normalise(rawData)
-    const observations = mapToFhir(normalised)
+    const patientReference = await this.connector.resolvePatientReference(normalised.patientId)
+    const observations = mapToFhir(normalised, { subjectReference: `Patient/${patientReference}` })
     await this.connector.upsertObservations(observations)
-    console.log(`Synced ${observations.length} observations for patient ${rawData.patientId}`)
+    console.log(`Synced ${observations.length} observations for patient ${patientReference}`)
   }
 }

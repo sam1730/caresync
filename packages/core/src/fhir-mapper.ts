@@ -3,6 +3,10 @@ import { NormalisedData, FhirObservation } from './types'
 const LOINC_SYSTEM = 'http://loinc.org'
 const UCUM_SYSTEM = 'http://unitsofmeasure.org'
 
+export interface MapToFhirOptions {
+  subjectReference?: string
+}
+
 interface MetricMapping {
   loincCode: string
   display: string
@@ -13,7 +17,7 @@ interface MetricMapping {
 const METRIC_MAPPINGS: Record<string, MetricMapping> = {
   steps: {
     loincCode: '55423-8',
-    display: 'Number of steps',
+    display: 'Number of steps in unspecified time',
     unit: 'steps',
     ucumCode: '{steps}',
   },
@@ -49,8 +53,9 @@ const METRIC_MAPPINGS: Record<string, MetricMapping> = {
   },
 }
 
-export function mapToFhir(data: NormalisedData): FhirObservation[] {
+export function mapToFhir(data: NormalisedData, options: MapToFhirOptions = {}): FhirObservation[] {
   const observations: FhirObservation[] = []
+  const subjectReference = options.subjectReference ?? `Patient/${data.patientId}`
 
   for (const [key, mapping] of Object.entries(METRIC_MAPPINGS)) {
     const value = data[key as keyof NormalisedData]
@@ -67,11 +72,13 @@ export function mapToFhir(data: NormalisedData): FhirObservation[] {
             display: mapping.display,
           },
         ],
+        text: mapping.display,
       },
       subject: {
-        reference: `Patient/${data.patientId}`,
+        reference: subjectReference,
       },
       effectiveDateTime: data.recordedAt.toISOString(),
+      issued: data.recordedAt.toISOString(),
       valueQuantity: {
         value,
         unit: mapping.unit,

@@ -2,8 +2,10 @@
   "name": "@caresync/mock-server",
   "version": "0.1.0",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "start": "ts-node src/server.ts",
-    "dev": "ts-node-dev src/server.ts"
+    "dev": "ts-node-dev src/server.ts",
+    "test": "node -e \"console.log('No tests for @caresync/mock-server')\""
   },
   "dependencies": {
     "fastify": "^5.8.4"
