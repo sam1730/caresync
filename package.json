@@ -1,0 +1,17 @@
+{
+  "name": "caresync",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "dev": "docker-compose up",
+    "mock": "npm run --workspace @caresync/mock-server dev",
+    "example": "npm run build --workspace @caresync/core && ts-node examples/basic-sync.ts"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.0"
+  }
+}
